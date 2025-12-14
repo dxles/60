@@ -1,15 +1,16 @@
-const express = require('express');
-const { createClient } = require('@supabase/supabase-js');
-const http = require('http');
-const { Server } = require('socket.io');
+import express from 'express';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
+const httpServer = createServer(app);
+const io = new Server(httpServer);
 
-const SUPABASE_URL = "https://qofeciqfqxrtgprquswn.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvZmVjaXFmcXhydGdwcnF1c3duIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE4NDEzOTQsImV4cCI6MjA3NzQxNzM5NH0.qXMBC3VnXskI3MNl0fqVR5BQEqVrWGVJUuswabZip4o";
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 app.use(express.static('public'));
 app.use(express.json());
@@ -20,11 +21,11 @@ app.post('/create-room', async (req, res) => {
         .from('rooms')
         .insert({})
         .select();
-    if(error) return res.status(500).json({error});
-    res.json({roomId: data[0].id});
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ roomId: data[0].id });
 });
 
-// Odaya katılma, sadece var mı kontrol
+// Odaya katılma
 app.get('/room/:id', async (req, res) => {
     const roomId = req.params.id;
     const { data, error } = await supabase
@@ -32,11 +33,11 @@ app.get('/room/:id', async (req, res) => {
         .select()
         .eq('id', roomId)
         .single();
-    if(error || !data) return res.status(404).send('Oda bulunamadı');
-    res.sendFile(__dirname + '/public/room.html');
+    if (error || !data) return res.status(404).send('Oda bulunamadı');
+    res.sendFile(new URL('./public/room.html', import.meta.url).pathname);
 });
 
-// Socket.io bağlantısı
+// Socket.io
 io.on('connection', socket => {
     socket.on('join-room', roomId => {
         socket.join(roomId);
@@ -52,4 +53,6 @@ io.on('connection', socket => {
     });
 });
 
-server.listen(3000, () => console.log('Sunucu 3000 portunda çalışıyor'));
+const PORT = process.env.PORT || 3000;
+httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
