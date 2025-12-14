@@ -17,7 +17,7 @@
 
 <script>
 async function createRoom() {
-    const res = await fetch('/create-room', { method: 'POST' });
+    const res = await fetch(`${window.location.origin}/create-room`, { method: 'POST' });
     const data = await res.json();
     if(data.roomId) window.location = `/room/${data.roomId}`;
 }
