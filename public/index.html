@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>ScreenShare</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+    <h1>ScreenShare 60FPS</h1>
+    <button onclick="createRoom()">Yeni Oda Oluştur</button>
+    <div class="join">
+        <input type="text" id="roomInput" placeholder="Oda ID">
+        <button onclick="joinRoom()">Odaya Katıl</button>
+    </div>
+</div>
+
+<script>
+async function createRoom() {
+    const res = await fetch('/create-room', { method: 'POST' });
+    const data = await res.json();
+    if(data.roomId) window.location = `/room/${data.roomId}`;
+}
+
+function joinRoom() {
+    const room = document.getElementById('roomInput').value.trim();
+    if(room) window.location = `/room/${room}`;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Oda</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="room-container">
+    <h2>Oda</h2>
+    <div class="videos">
+        <video id="localVideo" autoplay muted></video>
+        <video id="remoteVideo" autoplay></video>
+    </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+const roomId = window.location.pathname.split('/').pop();
+let localStream, peerConnection;
+const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+
+async function start() {
+    localStream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 60 }, audio: true });
+    document.getElementById('localVideo').srcObject = localStream;
+
+    socket.emit('join-room', roomId);
+
+    socket.on('user-connected', id => { createPeerConnection(id, true); });
+    socket.on('signal', async data => {
+        if (!peerConnection) createPeerConnection(data.from, false);
+        if(data.signal.type) {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription(data.signal));
+            if(data.signal.type === 'offer') {
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                socket.emit('signal', { to: data.from, signal: answer });
+            }
+        } else {
+            await peerConnection.addIceCandidate(data.signal);
+        }
+    });
+}
+start();
+
+function createPeerConnection(id, isOffer) {
+    peerConnection = new RTCPeerConnection(config);
+    localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+    peerConnection.ontrack = e => document.getElementById('remoteVideo').srcObject = e.streams[0];
+    peerConnection.onicecandidate = e => {
+        if (e.candidate) socket.emit('signal', { to: id, signal: e.candidate });
+    };
+    if(isOffer) {
+        peerConnection.createOffer().then(offer => {
+            peerConnection.setLocalDescription(offer);
+            socket.emit('signal', { to: id, signal: offer });
+        });
+    }
+}
+</script>
+</body>
+</html>
