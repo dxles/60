@@ -2,9 +2,6 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
@@ -54,5 +51,4 @@ io.on('connection', socket => {
 });
 
 const PORT = process.env.PORT || 3000;
-httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
+httpServer.listen(PORT, () => console.log(`Sunucu ${PORT} portunda çalışıyor`));
